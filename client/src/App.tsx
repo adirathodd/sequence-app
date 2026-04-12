@@ -9,6 +9,7 @@ import Hand from './components/Hand'
 import GameStatus from './components/GameStatus'
 import SequenceToast from './components/SequenceToast'
 import { EtherealShadow } from './components/ui/ethereal-shadow'
+import { LiquidGooFilter } from './components/ui/liquid-toggle'
 import { quitGame, renamePlayer } from './socket/socketClient'
 
 const pageAnim = {
@@ -49,6 +50,7 @@ export default function App() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gray-950">
+    <LiquidGooFilter />
     <AnimatePresence mode="sync" initial={false}>
 
       {screenKey === 'lobby' && (

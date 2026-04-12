@@ -4,6 +4,7 @@ import { useGameStore } from '../store/gameStore'
 import { setSlotAI, startGame, switchSlot, updateRules, quitGame } from '../socket/socketClient'
 import { EtherealShadow } from './ui/ethereal-shadow'
 import SegmentedControl from './SegmentedControl'
+import { LiquidToggle } from './ui/liquid-toggle'
 
 const TEAM_STYLE: Record<string, { bg: string; border: string; label: string; dot: string }> = {
   blue:  { bg: 'bg-blue-950/40',  border: 'border-blue-800/60',  label: 'text-blue-400',  dot: 'bg-blue-500'  },
@@ -133,12 +134,7 @@ export default function LobbyWaiting() {
               </div>
               <div className="flex items-center justify-between">
                 <label className="text-xs text-gray-500 uppercase tracking-wide">Hints</label>
-                <button
-                  onClick={() => handleHints(!localHints)}
-                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${localHints ? 'bg-indigo-600' : 'bg-white/10'}`}
-                >
-                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${localHints ? 'translate-x-5' : 'translate-x-0'}`} />
-                </button>
+                <LiquidToggle checked={localHints} onCheckedChange={handleHints} />
               </div>
             </motion.div>
           )}
