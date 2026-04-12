@@ -144,7 +144,7 @@ export default function Board() {
         {/* Sequence line overlay */}
         {gameState.sequences.length > 0 && (
           <svg
-            className="absolute inset-0 pointer-events-none"
+            className="absolute top-2 left-2 pointer-events-none"
             width={SVG_DIM}
             height={SVG_DIM}
             xmlns="http://www.w3.org/2000/svg"
