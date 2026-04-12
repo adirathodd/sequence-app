@@ -121,12 +121,12 @@ export default function Lobby() {
 
               <div className="flex items-center justify-between">
                 <label className="text-xs text-gray-500 uppercase tracking-wide">Hints</label>
-                <SegmentedControl
-                  options={[true, false] as const}
-                  value={hintsEnabled}
-                  onChange={setHintsEnabled}
-                  label={v => v ? 'On' : 'Off'}
-                />
+                <button
+                  onClick={() => setHintsEnabled(v => !v)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${hintsEnabled ? 'bg-indigo-600' : 'bg-white/10'}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${hintsEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
               </div>
 
               <p className="text-xs text-gray-600 text-center">
