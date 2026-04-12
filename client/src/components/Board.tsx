@@ -86,6 +86,7 @@ export default function Board() {
   const isMyTurn = gameState.players[gameState.currentPlayerIndex]?.id === myPlayerId
   const me = gameState.players.find(p => p.id === myPlayerId)
   const hasSelection = isMyTurn && selectedCardIndex !== null
+  const isWildcard = selectedCardIndex !== null ? me?.hand[selectedCardIndex]?.rank === 'J2' : false
 
   function isHighlighted(r: number, c: number): boolean {
     return hasSelection && highlightedCells.some(([hr, hc]) => hr === r && hc === c)
@@ -135,6 +136,7 @@ export default function Board() {
                 chipColor={myColor}
                 isNew={animatingCell === `${r}-${c}`}
                 flashColor={flashingCells.get(`${r}-${c}`)}
+                isWildcard={isWildcard}
                 onClick={() => handleCellClick(r, c)}
               />
             ))

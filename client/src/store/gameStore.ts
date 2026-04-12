@@ -11,6 +11,7 @@ interface LobbyStatePayload {
   numTeams: 2 | 3
   playersPerTeam: number
   turnTimer: 15 | 30 | 60 | null
+  sequencesToWin: 1 | 2 | 3
 }
 
 interface GameStore {
@@ -29,6 +30,7 @@ interface GameStore {
   playersPerTeam: number
   hostId: string | null
   turnTimer: 15 | 30 | 60 | null
+  sequencesToWin: 1 | 2 | 3
 
   setGameState: (s: GameState) => void
   setRoomInfo: (roomCode: string, playerId: string, color: ChipColor) => void
@@ -67,6 +69,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   playersPerTeam: 1,
   hostId: null,
   turnTimer: null,
+  sequencesToWin: 2,
 
   setGameState: (s) => set({ gameState: s }),
 
@@ -79,6 +82,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     numTeams: data.numTeams,
     playersPerTeam: data.playersPerTeam,
     turnTimer: data.turnTimer,
+    sequencesToWin: data.sequencesToWin,
   }),
 
   selectCard: (index) => {
@@ -123,7 +127,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const hintCells: Record<string, 'complete' | 'near'> = {}
     if (highlightMode === 'place' && myColor) {
       for (const [r, c] of highlighted) {
-        const run = maxRunAt(gameState.board, r, c, myColor)
+        const run = maxRunAt(gameState.board, r, c, myColor, gameState.sequences)
         if (run >= 4) hintCells[`${r}-${c}`] = 'complete'
         else if (run >= 3) hintCells[`${r}-${c}`] = 'near'
       }
@@ -156,6 +160,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playersPerTeam: 1,
       hostId: null,
       turnTimer: null,
+      sequencesToWin: 2,
     })
   },
 }))

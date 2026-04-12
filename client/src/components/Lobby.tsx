@@ -27,6 +27,7 @@ export default function Lobby() {
   const [numTeams, setNumTeams] = useState<2 | 3>(2)
   const [playersPerTeam, setPlayersPerTeam] = useState<1 | 2 | 3 | 4>(1)
   const [turnTimer, setTurnTimer] = useState<15 | 30 | 60 | null>(null)
+  const [sequencesToWin, setSequencesToWin] = useState<1 | 2 | 3>(2)
   const { error } = useGameStore()
 
   return (
@@ -107,11 +108,21 @@ export default function Lobby() {
                 />
               </div>
 
+              <div>
+                <label className="text-xs text-gray-500 uppercase tracking-wide mb-2 block">Sequences to win</label>
+                <SegmentedControl
+                  options={[1, 2, 3] as const}
+                  value={sequencesToWin}
+                  onChange={setSequencesToWin}
+                  label={n => String(n)}
+                />
+              </div>
+
               <p className="text-xs text-gray-600 text-center">
                 {numTeams * playersPerTeam} total players · {numTeams} teams
               </p>
 
-              <button onClick={() => createRoom(name || 'Player', numTeams, playersPerTeam, turnTimer)} className={`${BTN_PRIMARY} py-2.5`}>
+              <button onClick={() => createRoom(name || 'Player', numTeams, playersPerTeam, turnTimer, sequencesToWin)} className={`${BTN_PRIMARY} py-2.5`}>
                 Create Room
               </button>
               <button onClick={() => setMode('menu')} className={`${BTN_GHOST} text-sm`}>

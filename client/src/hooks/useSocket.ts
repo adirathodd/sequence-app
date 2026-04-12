@@ -9,6 +9,7 @@ interface LobbyStatePayload {
   numTeams: 2 | 3
   playersPerTeam: number
   turnTimer: 15 | 30 | 60 | null
+  sequencesToWin: 1 | 2 | 3
 }
 
 interface RoomJoinedPayload {

@@ -1,3 +1,4 @@
+import { cn } from '../lib/utils'
 import type { Cell as CellType, Card, ChipColor } from '../types/game'
 import type { HighlightMode } from '../store/gameStore'
 
@@ -9,6 +10,12 @@ const CHIP_BG: Record<string, string> = {
   blue: 'bg-blue-500',
   green: 'bg-green-500',
   red: 'bg-red-500',
+}
+// Border color matches chip color so team ownership is visible at a glance
+const CHIP_BORDER: Record<string, string> = {
+  blue: 'border-blue-300',
+  green: 'border-green-300',
+  red: 'border-red-300',
 }
 const SEQ_RING: Record<string, string> = {
   blue: 'ring-blue-400',
@@ -30,10 +37,12 @@ interface Props {
   chipColor: ChipColor
   isNew?: boolean
   flashColor?: string
+  /** True when the selected card is a two-eyed Jack (J2) — suppresses ring-offset to avoid overlap across ~80 adjacent highlighted cells */
+  isWildcard?: boolean
   onClick: () => void
 }
 
-export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, sequenceHint, chipColor, isNew, flashColor, onClick }: Props) {
+export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, sequenceHint, chipColor, isNew, flashColor, isWildcard, onClick }: Props) {
   const isFree = cell.card === 'FREE'
   const isLocked = cell.sequenceId !== null
   const isRemove = isHighlighted && highlightMode === 'remove'
@@ -46,6 +55,30 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
   const seqRing = seqColor ? SEQ_RING[seqColor] : 'ring-yellow-400'
   const seqShadow = seqColor ? SEQ_SHADOW[seqColor] : 'shadow-yellow-400/40'
 
+  // Base border: chip-colored when occupied and not actively highlighted, so team ownership is visible
+  const baseBorder = isFree
+    ? 'bg-yellow-100 border-yellow-400 text-yellow-700'
+    : cell.chip && !isHighlighted
+    ? `bg-white ${CHIP_BORDER[cell.chip]}`
+    : 'bg-white border-gray-200'
+
+  // Placement highlight:
+  // - complete/near: colored ring (amber or gold) so the player knows the significance
+  // - regular: no colored ring or dot — just visible (not dimmed) with a subtle border lift
+  // Wildcard J2 uses ring-1 (no ring-offset) to prevent adjacent rings overlapping in the 2px gap
+  const placeClass = (() => {
+    if (!isPlace) return ''
+    if (!isWildcard) {
+      if (isComplete) return 'bg-yellow-100 border-yellow-500 ring-[6px] ring-yellow-500 ring-offset-1 ring-offset-gray-900 shadow-lg shadow-yellow-500/60 cursor-pointer z-10 hover:scale-110 hover:shadow-xl hover:shadow-yellow-400/80 hover:bg-yellow-100'
+      if (isNear)     return 'bg-amber-100 border-amber-500 ring-[6px] ring-amber-500 ring-offset-1 ring-offset-gray-900 shadow-lg shadow-amber-500/60 cursor-pointer z-10 hover:scale-110 hover:shadow-xl hover:shadow-amber-400/80 hover:bg-amber-100'
+      return                 'border-gray-400 cursor-pointer z-10 hover:scale-105 hover:bg-gray-50'
+    }
+    // Wildcard: ring-[3px] (no ring-offset) — sits flush against the cell edge, non-overlapping
+    if (isComplete) return 'bg-yellow-100 border-yellow-500 ring-[3px] ring-yellow-500 shadow-md shadow-yellow-500/50 cursor-pointer z-10 hover:scale-105 hover:shadow-lg hover:shadow-yellow-400/70 hover:bg-yellow-100'
+    if (isNear)     return 'bg-amber-100 border-amber-500 ring-[3px] ring-amber-500 shadow-md shadow-amber-500/50 cursor-pointer z-10 hover:scale-105 hover:shadow-lg hover:shadow-amber-400/70 hover:bg-amber-100'
+    return                 'border-gray-300 cursor-pointer hover:scale-105 hover:bg-gray-50'
+  })()
+
   const cardKey = isFree ? null : (() => {
     const c = cell.card as Card
     const rank = c.rank === 'T' ? '10' : c.rank
@@ -55,31 +88,24 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
   return (
     <button
       onClick={onClick}
-      className={[
+      className={cn(
         'group relative w-11 h-11 rounded border flex flex-col items-center justify-center transition-all duration-150',
-        // Base
-        isFree ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : 'bg-white border-gray-200',
-        // Locked sequence — colored ring + glow
+        baseBorder,
+        // Locked sequence — colored ring + glow (suppressed while actively highlighted)
         !isPlace && !isRemove && isLocked
           ? `ring-2 ${seqRing} ring-offset-1 ring-offset-gray-900 shadow-md ${seqShadow}`
           : '',
         // Dimmed — not a valid target when a card is selected
         isDimmed ? 'opacity-25 cursor-default scale-[0.97]' : '',
-        // Place highlight — gold for complete sequence, amber for near, emerald for regular
-        isComplete
-          ? 'bg-yellow-50 border-yellow-400 ring-2 ring-yellow-400 ring-offset-1 ring-offset-gray-900 cursor-pointer z-10 hover:scale-110 hover:shadow-lg hover:shadow-yellow-400/60 hover:bg-yellow-100'
-          : isNear
-          ? 'bg-amber-50 border-amber-400 ring-2 ring-amber-400 ring-offset-1 ring-offset-gray-900 cursor-pointer z-10 hover:scale-110 hover:shadow-lg hover:shadow-amber-400/50 hover:bg-amber-100'
-          : isPlace
-          ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-400 ring-offset-1 ring-offset-gray-900 cursor-pointer z-10 hover:scale-110 hover:shadow-lg hover:shadow-emerald-400/40 hover:bg-emerald-100'
-          : '',
+        // Placement highlight
+        placeClass,
         // Remove highlight
         isRemove
           ? 'bg-red-50 border-red-400 ring-2 ring-red-400 ring-offset-1 ring-offset-gray-900 cursor-pointer z-10 hover:scale-110 hover:shadow-lg hover:shadow-red-400/40 hover:bg-red-100'
           : '',
         // Default non-highlighted cursor
         !isHighlighted && !isDimmed ? 'cursor-default' : '',
-      ].join(' ')}
+      )}
     >
       {/* Card label */}
       {isFree ? (
@@ -95,13 +121,13 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
 
       {/* Existing chip */}
       {cell.chip && (
-        <div className={[
+        <div className={cn(
           'absolute inset-1.5 rounded-full shadow-inner',
           CHIP_BG[cell.chip],
           isLocked ? 'opacity-100' : 'opacity-85',
           isRemove ? 'opacity-60' : '',
           isNew ? 'animate-chip-pop' : '',
-        ].join(' ')}>
+        )}>
           {/* Gloss highlight */}
           <div className="absolute top-0.5 left-1 right-1 h-1/3 rounded-full bg-white/35 blur-[1px]" />
           {/* Inner depth ring */}
@@ -111,10 +137,10 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
 
       {/* Ghost chip preview on hover for empty place targets */}
       {isPlace && !cell.chip && chipColor && (
-        <div className={[
+        <div className={cn(
           'absolute inset-1.5 rounded-full opacity-0 group-hover:opacity-50 transition-opacity duration-100 pointer-events-none',
           CHIP_BG[chipColor],
-        ].join(' ')}>
+        )}>
           <div className="absolute top-0.5 left-1 right-1 h-1/3 rounded-full bg-white/35 blur-[1px]" />
         </div>
       )}
@@ -128,13 +154,6 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
         </div>
       )}
 
-      {/* Place dot indicator */}
-      {isPlace && !cell.chip && (
-        <div className={[
-          'absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full opacity-80 pointer-events-none group-hover:opacity-0 transition-opacity',
-          isComplete ? 'bg-yellow-400' : isNear ? 'bg-amber-400' : 'bg-emerald-500',
-        ].join(' ')} />
-      )}
 
       {/* Sequence flash overlay */}
       {flashColor && (

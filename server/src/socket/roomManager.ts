@@ -110,6 +110,7 @@ function broadcastLobbyState(state: GameState, io: Server): void {
     numTeams: state.numTeams,
     playersPerTeam: state.playersPerTeam,
     turnTimer: state.turnTimer,
+    sequencesToWin: state.sequencesToWin,
   })
 }
 
@@ -220,10 +221,10 @@ function applyPlay(state: GameState, playerIndex: number, payload: PlayCardPaylo
       state.board = lockSequences(state.board, state.sequences)
       actionMsg += ` — Sequence!`
 
-      if (state.sequences.filter(s => s.color === player.color).length >= 2) {
+      if (state.sequences.filter(s => s.color === player.color).length >= state.sequencesToWin) {
         state.winner = player.color
         state.phase = 'ended'
-        state.lastAction = `${player.name} wins with 2 sequences!`
+        state.lastAction = `${player.name} wins with ${state.sequencesToWin} sequence${state.sequencesToWin > 1 ? 's' : ''}!`
         drawCard(state, playerIndex)
         broadcastState(state, io)
         return
@@ -296,11 +297,12 @@ function resolveQuit(state: GameState, quitterSocketId: string): void {
 
 export function registerHandlers(socket: Socket, io: Server): void {
 
-  socket.on('room:create', ({ playerName, numTeams, playersPerTeam, turnTimer }: {
+  socket.on('room:create', ({ playerName, numTeams, playersPerTeam, turnTimer, sequencesToWin }: {
     playerName: string
     numTeams: 2 | 3
     playersPerTeam: number
     turnTimer: 15 | 30 | 60 | null
+    sequencesToWin: 1 | 2 | 3
   }) => {
     const roomCode = generateRoomCode()
     const lobbySlots: LobbySlot[] = []
@@ -320,7 +322,7 @@ export function registerHandlers(socket: Socket, io: Server): void {
       roomCode, board: initBoard(), deck: [], discards: [], players: [],
       currentPlayerIndex: 0, sequences: [], phase: 'lobby', winner: null,
       lastAction: null, numTeams, playersPerTeam, hostId: socket.id,
-      lobbySlots, turnTimer, turnDeadline: null,
+      lobbySlots, turnTimer, sequencesToWin: sequencesToWin ?? 2, turnDeadline: null,
     }
 
     rooms.set(roomCode, state)
@@ -459,7 +461,7 @@ export function registerHandlers(socket: Socket, io: Server): void {
       players: [human, bot], currentPlayerIndex: 0, sequences: [],
       phase: 'lobby', winner: null, lastAction: null,
       numTeams: 2, playersPerTeam: 1, hostId: socket.id,
-      lobbySlots: [], turnTimer: null, turnDeadline: null,
+      lobbySlots: [], turnTimer: null, sequencesToWin: 2, turnDeadline: null,
     }
     rooms.set(roomCode, state)
     socketToRoom.set(socket.id, roomCode)
@@ -503,10 +505,11 @@ export function registerHandlers(socket: Socket, io: Server): void {
     handleDeadCard(state, playerIndex, cardIndex, io)
   })
 
-  socket.on('room:updateRules', ({ numTeams, playersPerTeam, turnTimer }: {
+  socket.on('room:updateRules', ({ numTeams, playersPerTeam, turnTimer, sequencesToWin }: {
     numTeams: 2 | 3
     playersPerTeam: number
     turnTimer: 15 | 30 | 60 | null
+    sequencesToWin: 1 | 2 | 3
   }) => {
     const roomCode = socketToRoom.get(socket.id)
     if (!roomCode) return
@@ -514,6 +517,7 @@ export function registerHandlers(socket: Socket, io: Server): void {
     if (!state || state.phase !== 'lobby' || state.hostId !== socket.id) return
 
     state.turnTimer = turnTimer
+    state.sequencesToWin = sequencesToWin
 
     if (state.numTeams !== numTeams || state.playersPerTeam !== playersPerTeam) {
       // Collect existing human players in order

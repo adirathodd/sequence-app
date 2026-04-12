@@ -40,6 +40,8 @@ export default function Hand() {
   const moveCount = highlightedCells.length
   const selectedCard = selectedCardIndex !== null ? me.hand[selectedCardIndex] : null
 
+  const keyCounts = new Map<string, number>()
+
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="flex gap-2 flex-wrap justify-center">
@@ -47,8 +49,11 @@ export default function Hand() {
           const dead = !card.hidden && isDeadCard(card, gameState!.board)
           const isSelected = selectedCardIndex === i
           const otherSelected = selectedCardIndex !== null && !isSelected
-          const cardKey = card.hidden ? `hidden-${i}` : `${card.rank}${card.suit}`
-          const potential = isMyTurn && !dead ? getCardPotential(card, gameState!.board, myColor) : null
+          const baseKey = card.hidden ? 'hidden' : `${card.rank}${card.suit}`
+          const n = keyCounts.get(baseKey) ?? 0
+          keyCounts.set(baseKey, n + 1)
+          const cardKey = `${baseKey}-${n}`
+          const potential = isMyTurn && !dead ? getCardPotential(card, gameState!.board, myColor, gameState!.sequences) : null
           return (
             <div key={cardKey} className="relative animate-card-deal" style={{ animationDelay: `${i * 35}ms` }}>
               {potential === 'complete' && (

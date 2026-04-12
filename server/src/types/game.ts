@@ -53,6 +53,7 @@ export interface GameState {
   hostId: string
   lobbySlots: LobbySlot[]
   turnTimer: 15 | 30 | 60 | null
+  sequencesToWin: 1 | 2 | 3
   turnDeadline: number | null
 }
 

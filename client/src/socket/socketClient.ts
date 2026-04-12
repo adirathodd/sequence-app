@@ -3,8 +3,8 @@ import type { PlayCardPayload } from '../types/game'
 
 export const socket = io({ path: '/socket.io', autoConnect: true })
 
-export const createRoom = (playerName: string, numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null) =>
-  socket.emit('room:create', { playerName, numTeams, playersPerTeam, turnTimer })
+export const createRoom = (playerName: string, numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null, sequencesToWin: 1 | 2 | 3) =>
+  socket.emit('room:create', { playerName, numTeams, playersPerTeam, turnTimer, sequencesToWin })
 
 export const joinRoom = (roomCode: string, playerName: string) =>
   socket.emit('room:join', { roomCode, playerName })
@@ -27,8 +27,8 @@ export const playCard = (payload: PlayCardPayload) =>
 export const exchangeDeadCard = (cardIndex: number) =>
   socket.emit('turn:deadCard', { cardIndex })
 
-export const updateRules = (numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null) =>
-  socket.emit('room:updateRules', { numTeams, playersPerTeam, turnTimer })
+export const updateRules = (numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null, sequencesToWin: 1 | 2 | 3) =>
+  socket.emit('room:updateRules', { numTeams, playersPerTeam, turnTimer, sequencesToWin })
 
 export const renamePlayer = (name: string) =>
   socket.emit('player:rename', { name })
