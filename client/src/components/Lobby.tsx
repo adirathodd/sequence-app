@@ -28,6 +28,7 @@ export default function Lobby() {
   const [playersPerTeam, setPlayersPerTeam] = useState<1 | 2 | 3 | 4>(1)
   const [turnTimer, setTurnTimer] = useState<15 | 30 | 60 | null>(null)
   const [sequencesToWin, setSequencesToWin] = useState<1 | 2 | 3>(2)
+  const [hintsEnabled, setHintsEnabled] = useState(true)
   const { error } = useGameStore()
 
   return (
@@ -118,11 +119,21 @@ export default function Lobby() {
                 />
               </div>
 
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-gray-500 uppercase tracking-wide">Hints</label>
+                <SegmentedControl
+                  options={[true, false] as const}
+                  value={hintsEnabled}
+                  onChange={setHintsEnabled}
+                  label={v => v ? 'On' : 'Off'}
+                />
+              </div>
+
               <p className="text-xs text-gray-600 text-center">
                 {numTeams * playersPerTeam} total players · {numTeams} teams
               </p>
 
-              <button onClick={() => createRoom(name || 'Player', numTeams, playersPerTeam, turnTimer, sequencesToWin)} className={`${BTN_PRIMARY} py-2.5`}>
+              <button onClick={() => createRoom(name || 'Player', numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled)} className={`${BTN_PRIMARY} py-2.5`}>
                 Create Room
               </button>
               <button onClick={() => setMode('menu')} className={`${BTN_GHOST} text-sm`}>
