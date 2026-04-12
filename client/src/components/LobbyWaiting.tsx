@@ -4,7 +4,6 @@ import { useGameStore } from '../store/gameStore'
 import { setSlotAI, startGame, switchSlot, updateRules, quitGame } from '../socket/socketClient'
 import { EtherealShadow } from './ui/ethereal-shadow'
 import SegmentedControl from './SegmentedControl'
-import { LiquidToggle } from './ui/liquid-toggle'
 
 const TEAM_STYLE: Record<string, { bg: string; border: string; label: string; dot: string }> = {
   blue:  { bg: 'bg-blue-950/40',  border: 'border-blue-800/60',  label: 'text-blue-400',  dot: 'bg-blue-500'  },
@@ -15,7 +14,7 @@ const TEAM_STYLE: Record<string, { bg: string; border: string; label: string; do
 const BTN_PRIMARY = 'bg-gradient-to-b from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 active:from-indigo-600 active:to-indigo-700 text-white font-semibold shadow-md shadow-indigo-950/60 hover:shadow-lg hover:shadow-indigo-900/60 border border-indigo-400/20 rounded-xl transition-all duration-200 active:scale-[0.97]'
 
 export default function LobbyWaiting() {
-  const { lobbySlots, hostId, roomCode, myPlayerId, numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled, resetGame } = useGameStore()
+  const { lobbySlots, hostId, roomCode, myPlayerId, numTeams, playersPerTeam, turnTimer, sequencesToWin, hints, resetGame } = useGameStore()
   const isHost = myPlayerId === hostId
   const iAmInLobby = lobbySlots.some(s => s.playerId === myPlayerId)
   const allFilled = lobbySlots.length > 0 && lobbySlots.every(s => s.isAI || s.playerId !== null)
@@ -25,7 +24,7 @@ export default function LobbyWaiting() {
   const [localPPT, setLocalPPT] = useState<1 | 2 | 4>(playersPerTeam as 1 | 2 | 4)
   const [localTimer, setLocalTimer] = useState<15 | 30 | 60 | null>(turnTimer)
   const [localSeqToWin, setLocalSeqToWin] = useState<1 | 2 | 3>(sequencesToWin)
-  const [localHints, setLocalHints] = useState(hintsEnabled)
+  const [localHints, setLocalHints] = useState<'none' | 'medium' | 'full'>(hints)
   const [rulesOpen, setRulesOpen] = useState(false)
   const [leaveConfirm, setLeaveConfirm] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -43,15 +42,15 @@ export default function LobbyWaiting() {
       setLocalPPT(playersPerTeam as 1 | 2 | 4)
       setLocalTimer(turnTimer)
       setLocalSeqToWin(sequencesToWin)
-      setLocalHints(hintsEnabled)
+      setLocalHints(hints)
     }
-  }, [rulesOpen, numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled])
+  }, [rulesOpen, numTeams, playersPerTeam, turnTimer, sequencesToWin, hints])
 
   function handleTeams(v: 2 | 3) { setLocalTeams(v); updateRules(v, localPPT, localTimer, localSeqToWin, localHints) }
   function handlePPT(v: 1 | 2 | 4) { setLocalPPT(v); updateRules(localTeams, v, localTimer, localSeqToWin, localHints) }
   function handleTimer(v: 15 | 30 | 60 | null) { setLocalTimer(v); updateRules(localTeams, localPPT, v, localSeqToWin, localHints) }
   function handleSeqToWin(v: 1 | 2 | 3) { setLocalSeqToWin(v); updateRules(localTeams, localPPT, localTimer, v, localHints) }
-  function handleHints(v: boolean) { setLocalHints(v); updateRules(localTeams, localPPT, localTimer, localSeqToWin, v) }
+  function handleHints(v: 'none' | 'medium' | 'full') { setLocalHints(v); updateRules(localTeams, localPPT, localTimer, localSeqToWin, v) }
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen gap-6 bg-gray-950 p-4 overflow-hidden">
@@ -92,7 +91,7 @@ export default function LobbyWaiting() {
                 {numTeams} teams · {playersPerTeam} per team
                 {turnTimer ? ` · ${turnTimer}s timer` : ' · no timer'}
                 {` · ${sequencesToWin} to win`}
-                {hintsEnabled ? ' · hints on' : ' · hints off'}
+                {hints === 'none' ? ' · no hints' : hints === 'medium' ? ' · hints: medium' : ' · hints: full'}
                 {isHost && (
                   <button onClick={() => setRulesOpen(true)} className="ml-2 text-indigo-500 hover:text-indigo-300 transition-colors duration-150">
                     Edit
@@ -132,9 +131,14 @@ export default function LobbyWaiting() {
                 <label className="text-xs text-gray-500 uppercase tracking-wide mb-2 block">Sequences to win</label>
                 <SegmentedControl options={[1, 2, 3] as const} value={localSeqToWin} onChange={handleSeqToWin} label={n => String(n)} />
               </div>
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-500 uppercase tracking-wide">Hints</label>
-                <LiquidToggle checked={localHints} onCheckedChange={handleHints} />
+              <div>
+                <label className="text-xs text-gray-500 uppercase tracking-wide mb-2 block">Hints</label>
+                <SegmentedControl
+                  options={['none', 'medium', 'full'] as const}
+                  value={localHints}
+                  onChange={handleHints}
+                  label={v => v === 'none' ? 'None' : v === 'medium' ? 'Medium' : 'Full'}
+                />
               </div>
             </motion.div>
           )}

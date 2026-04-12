@@ -91,7 +91,7 @@ export default function Board() {
   const isWildcard = selectedCardIndex !== null ? me?.hand[selectedCardIndex]?.rank === 'J2' : false
 
   function handleCellMouseEnter(r: number, c: number) {
-    if (!isHighlighted(r, c) || !myColor || !gameState!.hintsEnabled) return
+    if (!isHighlighted(r, c) || !myColor || gameState!.hints === 'none') return
     const cells = getBestRunCells(gameState!.board, r, c, myColor)
     setContributingCells(new Set(cells.map(([cr, cc]) => `${cr}-${cc}`)))
   }

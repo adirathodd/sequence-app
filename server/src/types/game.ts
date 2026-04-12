@@ -55,7 +55,7 @@ export interface GameState {
   turnTimer: 15 | 30 | 60 | null
   sequencesToWin: 1 | 2 | 3
   turnDeadline: number | null
-  hintsEnabled: boolean
+  hints: 'none' | 'medium' | 'full'
 }
 
 export interface PlayCardPayload {

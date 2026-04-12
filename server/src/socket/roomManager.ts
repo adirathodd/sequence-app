@@ -111,7 +111,7 @@ function broadcastLobbyState(state: GameState, io: Server): void {
     playersPerTeam: state.playersPerTeam,
     turnTimer: state.turnTimer,
     sequencesToWin: state.sequencesToWin,
-    hintsEnabled: state.hintsEnabled,
+    hints: state.hints,
   })
 }
 
@@ -298,13 +298,13 @@ function resolveQuit(state: GameState, quitterSocketId: string): void {
 
 export function registerHandlers(socket: Socket, io: Server): void {
 
-  socket.on('room:create', ({ playerName, numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled }: {
+  socket.on('room:create', ({ playerName, numTeams, playersPerTeam, turnTimer, sequencesToWin, hints }: {
     playerName: string
     numTeams: 2 | 3
     playersPerTeam: number
     turnTimer: 15 | 30 | 60 | null
     sequencesToWin: 1 | 2 | 3
-    hintsEnabled: boolean
+    hints: 'none' | 'medium' | 'full'
   }) => {
     const roomCode = generateRoomCode()
     const lobbySlots: LobbySlot[] = []
@@ -325,7 +325,7 @@ export function registerHandlers(socket: Socket, io: Server): void {
       currentPlayerIndex: 0, sequences: [], phase: 'lobby', winner: null,
       lastAction: null, numTeams, playersPerTeam, hostId: socket.id,
       lobbySlots, turnTimer, sequencesToWin: sequencesToWin ?? 2,
-      turnDeadline: null, hintsEnabled: hintsEnabled ?? true,
+      turnDeadline: null, hints: hints ?? 'full',
     }
 
     rooms.set(roomCode, state)
@@ -465,7 +465,7 @@ export function registerHandlers(socket: Socket, io: Server): void {
       phase: 'lobby', winner: null, lastAction: null,
       numTeams: 2, playersPerTeam: 1, hostId: socket.id,
       lobbySlots: [], turnTimer: null, sequencesToWin: 2, turnDeadline: null,
-      hintsEnabled: true,
+      hints: 'full',
     }
     rooms.set(roomCode, state)
     socketToRoom.set(socket.id, roomCode)
@@ -509,12 +509,12 @@ export function registerHandlers(socket: Socket, io: Server): void {
     handleDeadCard(state, playerIndex, cardIndex, io)
   })
 
-  socket.on('room:updateRules', ({ numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled }: {
+  socket.on('room:updateRules', ({ numTeams, playersPerTeam, turnTimer, sequencesToWin, hints }: {
     numTeams: 2 | 3
     playersPerTeam: number
     turnTimer: 15 | 30 | 60 | null
     sequencesToWin: 1 | 2 | 3
-    hintsEnabled: boolean
+    hints: 'none' | 'medium' | 'full'
   }) => {
     const roomCode = socketToRoom.get(socket.id)
     if (!roomCode) return
@@ -523,7 +523,7 @@ export function registerHandlers(socket: Socket, io: Server): void {
 
     state.turnTimer = turnTimer
     state.sequencesToWin = sequencesToWin
-    state.hintsEnabled = hintsEnabled
+    state.hints = hints
 
     if (state.numTeams !== numTeams || state.playersPerTeam !== playersPerTeam) {
       // Collect existing human players in order

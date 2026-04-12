@@ -3,8 +3,8 @@ import type { PlayCardPayload } from '../types/game'
 
 export const socket = io({ path: '/socket.io', autoConnect: true })
 
-export const createRoom = (playerName: string, numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null, sequencesToWin: 1 | 2 | 3, hintsEnabled: boolean) =>
-  socket.emit('room:create', { playerName, numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled })
+export const createRoom = (playerName: string, numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null, sequencesToWin: 1 | 2 | 3, hints: 'none' | 'medium' | 'full') =>
+  socket.emit('room:create', { playerName, numTeams, playersPerTeam, turnTimer, sequencesToWin, hints })
 
 export const joinRoom = (roomCode: string, playerName: string) =>
   socket.emit('room:join', { roomCode, playerName })
@@ -27,8 +27,8 @@ export const playCard = (payload: PlayCardPayload) =>
 export const exchangeDeadCard = (cardIndex: number) =>
   socket.emit('turn:deadCard', { cardIndex })
 
-export const updateRules = (numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null, sequencesToWin: 1 | 2 | 3, hintsEnabled: boolean) =>
-  socket.emit('room:updateRules', { numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled })
+export const updateRules = (numTeams: 2 | 3, playersPerTeam: number, turnTimer: 15 | 30 | 60 | null, sequencesToWin: 1 | 2 | 3, hints: 'none' | 'medium' | 'full') =>
+  socket.emit('room:updateRules', { numTeams, playersPerTeam, turnTimer, sequencesToWin, hints })
 
 export const renamePlayer = (name: string) =>
   socket.emit('player:rename', { name })

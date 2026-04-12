@@ -4,7 +4,6 @@ import { useGameStore } from '../store/gameStore'
 import { createRoom, joinRoom, startVsAI } from '../socket/socketClient'
 import { EtherealShadow } from './ui/ethereal-shadow'
 import SegmentedControl from './SegmentedControl'
-import { LiquidToggle } from './ui/liquid-toggle'
 
 type Mode = 'menu' | 'configure' | 'join'
 
@@ -29,7 +28,7 @@ export default function Lobby() {
   const [playersPerTeam, setPlayersPerTeam] = useState<1 | 2 | 3 | 4>(1)
   const [turnTimer, setTurnTimer] = useState<15 | 30 | 60 | null>(null)
   const [sequencesToWin, setSequencesToWin] = useState<1 | 2 | 3>(2)
-  const [hintsEnabled, setHintsEnabled] = useState(true)
+  const [hints, setHints] = useState<'none' | 'medium' | 'full'>('full')
   const { error } = useGameStore()
 
   return (
@@ -120,16 +119,21 @@ export default function Lobby() {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-gray-500 uppercase tracking-wide">Hints</label>
-                <LiquidToggle checked={hintsEnabled} onCheckedChange={setHintsEnabled} />
+              <div>
+                <label className="text-xs text-gray-500 uppercase tracking-wide mb-2 block">Hints</label>
+                <SegmentedControl
+                  options={['none', 'medium', 'full'] as const}
+                  value={hints}
+                  onChange={setHints}
+                  label={v => v === 'none' ? 'None' : v === 'medium' ? 'Medium' : 'Full'}
+                />
               </div>
 
               <p className="text-xs text-gray-600 text-center">
                 {numTeams * playersPerTeam} total players · {numTeams} teams
               </p>
 
-              <button onClick={() => createRoom(name || 'Player', numTeams, playersPerTeam, turnTimer, sequencesToWin, hintsEnabled)} className={`${BTN_PRIMARY} py-2.5`}>
+              <button onClick={() => createRoom(name || 'Player', numTeams, playersPerTeam, turnTimer, sequencesToWin, hints)} className={`${BTN_PRIMARY} py-2.5`}>
                 Create Room
               </button>
               <button onClick={() => setMode('menu')} className={`${BTN_GHOST} text-sm`}>
