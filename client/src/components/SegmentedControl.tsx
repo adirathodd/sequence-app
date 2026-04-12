@@ -1,4 +1,4 @@
-export default function SegmentedControl<T extends string | number | null>({
+export default function SegmentedControl<T extends string | number | boolean | null>({
   options, value, onChange, label,
 }: {
   options: readonly T[]
