@@ -14,12 +14,13 @@ interface Props {
   card: Card
   selected?: boolean
   isDead?: boolean
+  isPending?: boolean
   dimmed?: boolean
   onClick?: () => void
   disabled?: boolean
 }
 
-export default function CardComponent({ card, selected, isDead, dimmed, onClick, disabled }: Props) {
+export default function CardComponent({ card, selected, isDead, isPending, dimmed, onClick, disabled }: Props) {
   if (card.hidden) {
     return (
       <div className="w-14 h-20 rounded bg-blue-800 border border-blue-600 flex items-center justify-center text-white text-2xl select-none">
@@ -104,19 +105,26 @@ export default function CardComponent({ card, selected, isDead, dimmed, onClick,
       disabled={disabled}
       className={[
         'relative w-14 h-20 rounded border flex flex-col items-start justify-start p-1.5 text-sm font-bold transition-all select-none',
-        'bg-white shadow-sm border-gray-200',
-        selected ? 'ring-2 ring-yellow-400 -translate-y-2 shadow-lg shadow-yellow-300/30' : 'hover:-translate-y-1',
-        isDead ? 'opacity-40' : '',
-        dimmed ? 'opacity-30 scale-95' : '',
+        isDead ? 'bg-amber-50 border-amber-300' : 'bg-white shadow-sm border-gray-200',
+        selected
+          ? 'ring-2 ring-yellow-400 -translate-y-2 shadow-lg shadow-yellow-300/30'
+          : isPending
+          ? 'ring-2 ring-amber-400 -translate-y-3 shadow-lg shadow-amber-400/40 border-amber-400'
+          : 'hover:-translate-y-1',
+        isDead && !isPending ? 'opacity-60' : '',
+        dimmed ? 'opacity-25 scale-95' : '',
         disabled ? 'cursor-default' : 'cursor-pointer',
         color,
       ].join(' ')}
     >
       <span>{rank}</span>
       <span className="text-base leading-none">{suit}</span>
-      {isDead && (
-        <div className="absolute inset-0 flex items-center justify-center rounded">
-          <div className="w-full h-0.5 bg-red-400 rotate-45" />
+      {isDead && !isPending && (
+        <div className="absolute inset-0 flex items-end justify-end rounded pointer-events-none p-0.5">
+          <span className="text-[7px] font-black uppercase tracking-tight text-red-500/80 bg-red-100 px-0.5 py-px rounded leading-none">dead</span>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-full h-px bg-red-400/50 rotate-45" />
+          </div>
         </div>
       )}
     </button>

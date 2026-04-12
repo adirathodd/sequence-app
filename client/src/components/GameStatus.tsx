@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { rematch } from '../socket/socketClient'
+import { rematch, startVsAI, quitGame } from '../socket/socketClient'
 import Confetti from './Confetti'
 
 const BTN_INDIGO = 'bg-gradient-to-b from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 active:from-indigo-600 active:to-indigo-700 text-white font-semibold shadow-md shadow-indigo-950/60 hover:shadow-lg hover:shadow-indigo-900/60 border border-indigo-400/20 rounded-xl transition-all duration-200 active:scale-[0.97]'
 const BTN_GOLD   = 'bg-gradient-to-b from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 active:from-yellow-500 active:to-yellow-600 text-yellow-950 font-semibold shadow-md shadow-yellow-900/40 hover:shadow-lg border border-yellow-300/30 rounded-xl transition-all duration-200 active:scale-[0.97]'
-const BTN_GHOST  = 'text-gray-600 hover:text-gray-400 transition-colors duration-150 font-medium'
 const BTN_SECONDARY = 'bg-white/6 hover:bg-white/10 border border-white/10 hover:border-white/20 text-gray-300 font-semibold rounded-xl shadow-sm transition-all duration-200 active:scale-[0.97]'
 
 export default function GameStatus() {
-  const { gameState, myColor, roomCode, resetGame, hostId, myPlayerId } = useGameStore()
+  const { gameState, myColor, roomCode, resetGame, hostId, myPlayerId, sequencesToWin } = useGameStore()
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -41,6 +40,8 @@ export default function GameStatus() {
     gameState.players.map(p => p.color).filter((c): c is Exclude<typeof c, null> => c !== null)
   )]
 
+  const myName = gameState.players.find(p => p.id === myPlayerId)?.name ?? 'Player'
+
   if (gameState.phase === 'ended') {
     if (!gameState.winner) {
       return (
@@ -52,14 +53,15 @@ export default function GameStatus() {
               <div className="text-sm text-gray-500">{gameState.lastAction}</div>
             </div>
             <div className="flex flex-col gap-2 w-full">
-              {isHost ? (
+              {isHost && (
                 <button onClick={() => rematch()} className={`${BTN_INDIGO} w-full py-3 text-sm`}>
                   Rematch
                 </button>
-              ) : (
-                <p className="text-center text-sm text-gray-500 animate-pulse py-2">Waiting for host to restart…</p>
               )}
-              <button onClick={() => resetGame()} className={`${BTN_SECONDARY} w-full py-2 text-sm`}>
+              <button onClick={() => startVsAI(myName)} className={`${BTN_SECONDARY} w-full py-2.5 text-sm`}>
+                Restart
+              </button>
+              <button onClick={() => { quitGame(); resetGame() }} className={`${BTN_SECONDARY} w-full py-2.5 text-sm`}>
                 Back to Menu
               </button>
             </div>
@@ -69,9 +71,8 @@ export default function GameStatus() {
     }
 
     const iWon = gameState.winner === myColor
-    const winnerName = gameState.players.find(p => p.color === gameState.winner)?.name ?? 'Someone'
     const winnerSeqs = gameState.sequences.filter(s => s.color === gameState.winner).length
-    const isForfeit = winnerSeqs < 2
+    const isForfeit = winnerSeqs < gameState.sequencesToWin
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
@@ -89,11 +90,11 @@ export default function GameStatus() {
             <div className={`text-4xl font-black tracking-tight mb-1 ${iWon ? 'text-yellow-600' : 'text-white'}`}>
               {iWon ? 'You Win!' : 'You Lose'}
             </div>
-            <div className={`text-sm ${iWon ? 'text-yellow-700' : 'text-gray-500'}`}>
-              {isForfeit
-                ? (gameState.lastAction ?? (iWon ? 'Opponent left the game' : 'You left the game'))
-                : (iWon ? `${winnerName} completed 2 sequences` : `${winnerName} won the game`)}
-            </div>
+            {isForfeit && (
+              <div className={`text-sm ${iWon ? 'text-yellow-700' : 'text-gray-500'}`}>
+                {gameState.lastAction ?? (iWon ? 'Opponent left the game' : 'You left the game')}
+              </div>
+            )}
           </div>
 
           <div className={`flex gap-6 text-center py-3 px-6 rounded-2xl w-full justify-center ${iWon ? 'bg-yellow-100' : 'bg-white/6 border border-white/8'}`}>
@@ -117,17 +118,34 @@ export default function GameStatus() {
           </div>
 
           <div className="flex flex-col gap-2 w-full">
-            {isHost ? (
+            {isHost && (
               <button
                 onClick={() => rematch()}
                 className={`${iWon ? BTN_GOLD : BTN_INDIGO} w-full py-3 text-sm`}
               >
                 Rematch
               </button>
-            ) : (
-              <p className="text-center text-sm text-gray-500 animate-pulse py-2">Waiting for host to restart…</p>
             )}
-            <button onClick={() => resetGame()} className={`${BTN_GHOST} w-full py-2 text-sm`}>
+            <button
+              onClick={() => startVsAI(myName)}
+              className={[
+                'w-full py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 active:scale-[0.97]',
+                iWon
+                  ? 'bg-white border-yellow-200 text-yellow-800 hover:bg-yellow-50 shadow-sm'
+                  : 'bg-white/6 border-white/10 hover:bg-white/10 hover:border-white/20 text-gray-300 shadow-sm',
+              ].join(' ')}
+            >
+              Restart
+            </button>
+            <button
+              onClick={() => { quitGame(); resetGame() }}
+              className={[
+                'w-full py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 active:scale-[0.97]',
+                iWon
+                  ? 'bg-yellow-100 border-yellow-200 text-yellow-700 hover:bg-yellow-200'
+                  : 'bg-white/6 border-white/10 hover:bg-white/10 hover:border-white/20 text-gray-300',
+              ].join(' ')}
+            >
               Back to Menu
             </button>
           </div>
@@ -206,7 +224,7 @@ export default function GameStatus() {
             <div key={color} className="flex items-center gap-1.5">
               <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${chipBg}`} />
               <span className={`text-xs font-black tabular-nums ${isMyTeam ? chipText : 'text-gray-500'}`}>
-                {seqCount}/2
+                {seqCount}/{sequencesToWin}
               </span>
             </div>
           )

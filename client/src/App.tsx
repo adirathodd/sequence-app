@@ -35,7 +35,7 @@ export default function App() {
 
   useEffect(() => { setSettingsOpen(false) }, [gameState?.roomCode])
 
-  function handleQuit() { quitGame(); resetGame() }
+  function handleQuit() { setSettingsOpen(false); setConfirmingQuit(false); quitGame(); resetGame() }
 
   function handleSaveName() {
     const trimmed = nameInput.trim()

@@ -27,6 +27,11 @@ const SEQ_SHADOW: Record<string, string> = {
   green: 'shadow-green-400/50',
   red: 'shadow-red-400/50',
 }
+const LOCKED_BG: Record<string, string> = {
+  blue: 'bg-blue-100',
+  green: 'bg-green-100',
+  red: 'bg-red-100',
+}
 
 interface Props {
   cell: CellType
@@ -39,10 +44,14 @@ interface Props {
   flashColor?: string
   /** True when the selected card is a two-eyed Jack (J2) — suppresses ring-offset to avoid overlap across ~80 adjacent highlighted cells */
   isWildcard?: boolean
+  /** True when this chip contributes to the potential sequence at the currently hovered placement cell */
+  isContributing?: boolean
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
   onClick: () => void
 }
 
-export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, sequenceHint, chipColor, isNew, flashColor, isWildcard, onClick }: Props) {
+export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, sequenceHint, chipColor, isNew, flashColor, isWildcard, isContributing, onMouseEnter, onMouseLeave, onClick }: Props) {
   const isFree = cell.card === 'FREE'
   const isLocked = cell.sequenceId !== null
   const isRemove = isHighlighted && highlightMode === 'remove'
@@ -55,11 +64,12 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
   const seqRing = seqColor ? SEQ_RING[seqColor] : 'ring-yellow-400'
   const seqShadow = seqColor ? SEQ_SHADOW[seqColor] : 'shadow-yellow-400/40'
 
-  // Base border: chip-colored when occupied and not actively highlighted, so team ownership is visible
+  // Base border: chip-colored when occupied and not actively highlighted, so team ownership is visible.
+  // Locked sequence cells also get a colored background tint so the 5-cell group reads as a unit.
   const baseBorder = isFree
     ? 'bg-yellow-100 border-yellow-400 text-yellow-700'
     : cell.chip && !isHighlighted
-    ? `bg-white ${CHIP_BORDER[cell.chip]}`
+    ? `${isLocked && !isDimmed ? LOCKED_BG[cell.chip] : 'bg-white'} ${CHIP_BORDER[cell.chip]}`
     : 'bg-white border-gray-200'
 
   // Placement highlight:
@@ -69,12 +79,12 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
   const placeClass = (() => {
     if (!isPlace) return ''
     if (!isWildcard) {
-      if (isComplete) return 'bg-yellow-100 border-yellow-500 ring-[6px] ring-yellow-500 ring-offset-1 ring-offset-gray-900 shadow-lg shadow-yellow-500/60 cursor-pointer z-10 hover:scale-110 hover:shadow-xl hover:shadow-yellow-400/80 hover:bg-yellow-100'
+      if (isComplete) return 'bg-emerald-100 border-emerald-500 ring-[6px] ring-emerald-500 ring-offset-1 ring-offset-gray-900 shadow-lg shadow-emerald-500/60 cursor-pointer z-10 hover:scale-110 hover:shadow-xl hover:shadow-emerald-400/80 hover:bg-emerald-100'
       if (isNear)     return 'bg-amber-100 border-amber-500 ring-[6px] ring-amber-500 ring-offset-1 ring-offset-gray-900 shadow-lg shadow-amber-500/60 cursor-pointer z-10 hover:scale-110 hover:shadow-xl hover:shadow-amber-400/80 hover:bg-amber-100'
       return                 'border-gray-400 cursor-pointer z-10 hover:scale-105 hover:bg-gray-50'
     }
     // Wildcard: ring-[3px] (no ring-offset) — sits flush against the cell edge, non-overlapping
-    if (isComplete) return 'bg-yellow-100 border-yellow-500 ring-[3px] ring-yellow-500 shadow-md shadow-yellow-500/50 cursor-pointer z-10 hover:scale-105 hover:shadow-lg hover:shadow-yellow-400/70 hover:bg-yellow-100'
+    if (isComplete) return 'bg-emerald-100 border-emerald-500 ring-[3px] ring-emerald-500 shadow-md shadow-emerald-500/50 cursor-pointer z-10 hover:scale-105 hover:shadow-lg hover:shadow-emerald-400/70 hover:bg-emerald-100'
     if (isNear)     return 'bg-amber-100 border-amber-500 ring-[3px] ring-amber-500 shadow-md shadow-amber-500/50 cursor-pointer z-10 hover:scale-105 hover:shadow-lg hover:shadow-amber-400/70 hover:bg-amber-100'
     return                 'border-gray-300 cursor-pointer hover:scale-105 hover:bg-gray-50'
   })()
@@ -88,6 +98,8 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
   return (
     <button
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className={cn(
         'group relative w-11 h-11 rounded border flex flex-col items-center justify-center transition-all duration-150',
         baseBorder,
@@ -95,8 +107,10 @@ export default function Cell({ cell, isHighlighted, isDimmed, highlightMode, seq
         !isPlace && !isRemove && isLocked
           ? `ring-2 ${seqRing} ring-offset-1 ring-offset-gray-900 shadow-md ${seqShadow}`
           : '',
-        // Dimmed — not a valid target when a card is selected
-        isDimmed ? 'opacity-25 cursor-default scale-[0.97]' : '',
+        // Dimmed — not a valid target when a card is selected (contributing chips are exempt)
+        isDimmed && !isContributing ? 'opacity-25 cursor-default scale-[0.97]' : '',
+        // Contributing — existing chip that forms part of the hovered potential sequence
+        isContributing ? 'ring-2 ring-white/70 ring-offset-1 ring-offset-gray-900 scale-105 brightness-110' : '',
         // Placement highlight
         placeClass,
         // Remove highlight

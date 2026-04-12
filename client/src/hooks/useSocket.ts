@@ -38,6 +38,8 @@ export function useSocket(): void {
     socket.on('connect', handleConnect)
 
     socket.on('game:state', (state: GameState) => {
+      // Ignore events that arrive after the player has reset back to menu
+      if (useGameStore.getState().myPlayerId === null) return
       setGameState(state)
     })
 
@@ -49,6 +51,7 @@ export function useSocket(): void {
     })
 
     socket.on('room:lobbyState', (data: LobbyStatePayload) => {
+      if (useGameStore.getState().myPlayerId === null) return
       setLobbyState(data)
     })
 

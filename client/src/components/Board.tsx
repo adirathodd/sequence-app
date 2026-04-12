@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import Cell from './Cell'
 import { playCard, exchangeDeadCard } from '../socket/socketClient'
+import { getBestRunCells } from '../utils/sequenceHint'
 import type { Cell as CellType, Sequence } from '../types/game'
 
 // Fixed cell dimensions matching Tailwind w-11 (44px) + gap-0.5 (2px)
@@ -41,6 +42,7 @@ export default function Board() {
 
   const prevSeqCountRef = useRef(0)
   const [flashingCells, setFlashingCells] = useState<Map<string, string>>(new Map())
+  const [contributingCells, setContributingCells] = useState<Set<string>>(new Set())
 
   const SEQ_FLASH_COLOR: Record<string, string> = {
     blue: '#93c5fd', green: '#86efac', red: '#fca5a5',
@@ -87,6 +89,16 @@ export default function Board() {
   const me = gameState.players.find(p => p.id === myPlayerId)
   const hasSelection = isMyTurn && selectedCardIndex !== null
   const isWildcard = selectedCardIndex !== null ? me?.hand[selectedCardIndex]?.rank === 'J2' : false
+
+  function handleCellMouseEnter(r: number, c: number) {
+    if (!isHighlighted(r, c) || !myColor) return
+    const cells = getBestRunCells(gameState!.board, r, c, myColor)
+    setContributingCells(new Set(cells.map(([cr, cc]) => `${cr}-${cc}`)))
+  }
+
+  function handleCellMouseLeave() {
+    setContributingCells(new Set())
+  }
 
   function isHighlighted(r: number, c: number): boolean {
     return hasSelection && highlightedCells.some(([hr, hc]) => hr === r && hc === c)
@@ -137,6 +149,9 @@ export default function Board() {
                 isNew={animatingCell === `${r}-${c}`}
                 flashColor={flashingCells.get(`${r}-${c}`)}
                 isWildcard={isWildcard}
+                isContributing={contributingCells.has(`${r}-${c}`)}
+                onMouseEnter={() => handleCellMouseEnter(r, c)}
+                onMouseLeave={handleCellMouseLeave}
                 onClick={() => handleCellClick(r, c)}
               />
             ))
@@ -164,7 +179,7 @@ export default function Board() {
                   stroke={line.color}
                   strokeWidth={CELL_SIZE * 0.8}
                   strokeLinecap="round"
-                  opacity={0.22}
+                  opacity={hasSelection ? 0.18 : 0.65}
                 />
               )
             })}

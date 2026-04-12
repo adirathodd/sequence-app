@@ -39,6 +39,7 @@ export default function Hand() {
 
   const moveCount = highlightedCells.length
   const selectedCard = selectedCardIndex !== null ? me.hand[selectedCardIndex] : null
+  const hasPending = pendingDeadCardIndex !== null
 
   const keyCounts = new Map<string, number>()
 
@@ -48,14 +49,45 @@ export default function Hand() {
         {me.hand.map((card, i) => {
           const dead = !card.hidden && isDeadCard(card, gameState!.board)
           const isSelected = selectedCardIndex === i
-          const otherSelected = selectedCardIndex !== null && !isSelected
+          const isPending = pendingDeadCardIndex === i
+          const dimmed = isMyTurn && (
+            (selectedCardIndex !== null && !isSelected) ||
+            (hasPending && !isPending)
+          )
           const baseKey = card.hidden ? 'hidden' : `${card.rank}${card.suit}`
           const n = keyCounts.get(baseKey) ?? 0
           keyCounts.set(baseKey, n + 1)
           const cardKey = `${baseKey}-${n}`
-          const potential = isMyTurn && !dead ? getCardPotential(card, gameState!.board, myColor, gameState!.sequences) : null
+          const potential = isMyTurn && !dead && !hasPending
+            ? getCardPotential(card, gameState!.board, myColor, gameState!.sequences)
+            : null
           return (
             <div key={cardKey} className="relative animate-card-deal" style={{ animationDelay: `${i * 35}ms` }}>
+              {isPending && (
+                <div className="absolute -top-[92px] left-1/2 -translate-x-1/2 z-40 w-max">
+                  <div className="relative bg-gray-950 border border-amber-500/40 rounded-xl px-3 py-2.5 flex flex-col items-center gap-2 shadow-2xl shadow-black/70">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wide">Dead Card</span>
+                      <span className="text-[10px] text-gray-500">Both spots taken · costs your turn</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={confirmDeadCard}
+                        className="bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:from-amber-500 active:to-amber-600 text-amber-950 font-semibold rounded-lg px-3 py-1 text-xs border border-amber-300/30 shadow-sm active:scale-95 transition-all duration-150"
+                      >
+                        Exchange
+                      </button>
+                      <button
+                        onClick={() => setPendingDeadCard(null)}
+                        className="text-gray-500 hover:text-gray-300 font-medium text-xs transition-colors duration-150"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <div className="absolute -bottom-[5px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-gray-950 border-r border-b border-amber-500/40 rotate-45" />
+                  </div>
+                </div>
+              )}
               {potential === 'complete' && (
                 <span className="absolute -top-1 -right-1 z-20 w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_6px_2px_rgba(52,211,153,0.7)] ring-1 ring-gray-950" />
               )}
@@ -66,7 +98,8 @@ export default function Hand() {
                 card={card}
                 selected={isSelected}
                 isDead={dead}
-                dimmed={otherSelected && isMyTurn}
+                isPending={isPending}
+                dimmed={dimmed}
                 onClick={() => handleCardClick(i)}
                 disabled={!isMyTurn}
               />
@@ -99,27 +132,6 @@ export default function Hand() {
               no moves
             </span>
           )}
-        </div>
-      )}
-
-      {pendingDeadCardIndex !== null && (
-        <div className="flex items-center gap-3 bg-gray-950/80 backdrop-blur-sm border border-white/8 rounded-xl px-4 py-2.5 text-sm text-gray-300">
-          <span className="text-yellow-400 text-base flex-shrink-0">⚠️</span>
-          <span>Dead card — both spots taken. Exchange it? <span className="text-gray-600">(costs your turn)</span></span>
-          <div className="flex gap-2 ml-1 flex-shrink-0">
-            <button
-              onClick={confirmDeadCard}
-              className="bg-gradient-to-b from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400 active:from-yellow-500 active:to-yellow-600 text-yellow-950 font-semibold shadow-sm shadow-yellow-900/30 border border-yellow-300/30 rounded-lg transition-all duration-200 active:scale-[0.97] px-3 py-1 text-xs"
-            >
-              Exchange
-            </button>
-            <button
-              onClick={() => setPendingDeadCard(null)}
-              className="text-gray-600 hover:text-gray-300 transition-colors duration-150 font-medium text-xs"
-            >
-              Cancel
-            </button>
-          </div>
         </div>
       )}
     </div>

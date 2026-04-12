@@ -35,31 +35,72 @@ export function maxRunAt(board: Cell[][], r: number, c: number, myColor: ChipCol
     const backward = runInDir(board, r, c, -dr, -dc, myColor)
     const forward = runInDir(board, r, c, dr, dc, myColor)
 
-    if (sequences.length === 0) {
+    const mySeqs = sequences.filter(s => s.color === myColor)
+    if (mySeqs.length === 0) {
       const run = backward + forward
       if (run > best) best = run
       continue
     }
 
-    // Build the linear run of cells through (r,c); (r,c) is at index `backward`
+    // Build the linear run of cells through (r,c), extended by 1 in each direction
+    // beyond the chip run so that 5-cell windows can be formed for the "near" (run=3) case.
     const runCells: [number, number][] = []
-    for (let i = -backward; i <= forward; i++) {
-      runCells.push([r + dr * i, c + dc * i])
+    for (let i = -(backward + 1); i <= forward + 1; i++) {
+      const nr = r + dr * i, nc = c + dc * i
+      if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10) runCells.push([nr, nc])
     }
 
-    // Check all 5-chip windows that include (r,c)
-    const maxStart = Math.min(backward, runCells.length - 5)
-    for (let start = Math.max(0, backward - 4); start <= maxStart; start++) {
+    const placementIdx = runCells.findIndex(([nr, nc]) => nr === r && nc === c)
+
+    // Check all 5-cell windows that include (r,c)
+    const maxStart = Math.min(placementIdx, runCells.length - 5)
+    for (let start = Math.max(0, placementIdx - 4); start <= maxStart; start++) {
       const window = runCells.slice(start, start + 5) as [number, number][]
-      if (windowIsValid(window, myColor, sequences)) {
-        // Count aligned chips in this window (excludes the empty cell (r,c) itself)
-        const aligned = window.filter(([wr, wc]) => !(wr === r && wc === c)).length
+      if (windowIsValid(window, myColor, mySeqs)) {
+        // Count chips of myColor (or FREE corners) in this window, excluding (r,c) itself
+        const aligned = window.filter(([wr, wc]) => {
+          if (wr === r && wc === c) return false
+          const cell = board[wr][wc]
+          return cell.card === 'FREE' || cell.chip === myColor
+        }).length
         if (aligned > best) best = aligned
-        break
       }
     }
   }
   return best
+}
+
+/**
+ * Returns existing chip positions that could contribute to a sequence through (r, c).
+ * Scans up to 4 steps in all 8 directional rays, collecting friendly chips (or FREE corners)
+ * even across gaps — stopping only when an opponent chip blocks the line.
+ */
+export function getBestRunCells(
+  board: Cell[][],
+  r: number,
+  c: number,
+  myColor: ChipColor,
+): [number, number][] {
+  const found = new Set<string>()
+
+  for (const [dr, dc] of DIRS) {
+    for (const sign of [1, -1] as const) {
+      for (let step = 1; step <= 4; step++) {
+        const nr = r + dr * sign * step
+        const nc = c + dc * sign * step
+        if (nr < 0 || nr >= 10 || nc < 0 || nc >= 10) break
+        const cell = board[nr][nc]
+        if (cell.card === 'FREE' || cell.chip === myColor) {
+          found.add(`${nr},${nc}`)
+        } else if (cell.chip !== null) {
+          break // opponent chip blocks this ray
+        }
+        // empty cells: continue scanning through the gap
+      }
+    }
+  }
+
+  return [...found].map(key => key.split(',').map(Number) as [number, number])
 }
 
 export type SequencePotential = 'complete' | 'near' | null
