@@ -12,6 +12,7 @@ interface LobbyStatePayload {
   playersPerTeam: number
   turnTimer: 15 | 30 | 60 | null
   sequencesToWin: 1 | 2 | 3
+  hintsEnabled: boolean
 }
 
 interface GameStore {
@@ -31,6 +32,7 @@ interface GameStore {
   hostId: string | null
   turnTimer: 15 | 30 | 60 | null
   sequencesToWin: 1 | 2 | 3
+  hintsEnabled: boolean
 
   setGameState: (s: GameState) => void
   setRoomInfo: (roomCode: string, playerId: string, color: ChipColor) => void
@@ -70,6 +72,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   hostId: null,
   turnTimer: null,
   sequencesToWin: 2,
+  hintsEnabled: true,
 
   setGameState: (s) => set({ gameState: s }),
 
@@ -83,6 +86,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     playersPerTeam: data.playersPerTeam,
     turnTimer: data.turnTimer,
     sequencesToWin: data.sequencesToWin,
+    hintsEnabled: data.hintsEnabled,
   }),
 
   selectCard: (index) => {
@@ -123,9 +127,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       highlightMode = 'place'
     }
 
-    // Compute sequence potential for each highlighted place cell
+    // Compute sequence potential — only when hints are enabled for this room
     const hintCells: Record<string, 'complete' | 'near'> = {}
-    if (highlightMode === 'place' && myColor) {
+    if (highlightMode === 'place' && myColor && gameState.hintsEnabled) {
       for (const [r, c] of highlighted) {
         const run = maxRunAt(gameState.board, r, c, myColor, gameState.sequences)
         if (run >= 4) hintCells[`${r}-${c}`] = 'complete'
@@ -161,6 +165,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       hostId: null,
       turnTimer: null,
       sequencesToWin: 2,
+      hintsEnabled: true,
     })
   },
 }))
