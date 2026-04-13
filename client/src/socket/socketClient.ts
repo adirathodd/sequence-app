@@ -36,8 +36,8 @@ export const renamePlayer = (name: string) =>
 export const quitGame = () =>
   socket.emit('game:quit')
 
-export const rematch = () =>
-  socket.emit('room:rematch')
+export const returnToLobby = () =>
+  socket.emit('room:returnToLobby')
 
 export const rejoinRoom = (token: string) =>
   socket.emit('room:rejoin', { token })
