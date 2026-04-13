@@ -421,6 +421,55 @@ export function registerHandlers(socket: Socket, io: Server): void {
     startGame(state, io)
   })
 
+  socket.on('room:returnToLobby', () => {
+    const roomCode = socketToRoom.get(socket.id)
+    if (!roomCode) return
+    const state = rooms.get(roomCode)
+    if (!state || state.phase !== 'ended' || state.hostId !== socket.id) return
+
+    // Cancel any lingering disconnect grace timers
+    for (const player of state.players) {
+      const h = disconnectTimers.get(player.id)
+      if (h) { clearTimeout(h); disconnectTimers.delete(player.id) }
+    }
+
+    // Rebuild lobbySlots from current players, preserving teams and AI flags
+    const newSlots: LobbySlot[] = []
+    for (let t = 0; t < state.numTeams; t++) {
+      const teamColor = TEAM_COLORS[t]
+      const teamPlayers = state.players.filter(p => p.color === teamColor)
+      for (let s = 0; s < state.playersPerTeam; s++) {
+        const player = teamPlayers[s]
+        if (player) {
+          newSlots.push({
+            color: teamColor,
+            seatIndex: s,
+            playerId: player.isAI ? null : player.id,
+            playerName: player.isAI ? null : player.name,
+            isAI: player.isAI,
+          })
+        } else {
+          newSlots.push({ color: teamColor, seatIndex: s, playerId: null, playerName: null, isAI: false })
+        }
+      }
+    }
+
+    // Reset to lobby state
+    state.lobbySlots = newSlots
+    state.players = []
+    state.board = initBoard()
+    state.deck = []
+    state.discards = []
+    state.currentPlayerIndex = 0
+    state.sequences = []
+    state.winner = null
+    state.lastAction = null
+    state.turnDeadline = null
+    state.phase = 'lobby'
+
+    broadcastLobbyState(state, io)
+  })
+
   socket.on('room:rejoin', ({ token }: { token: string }) => {
     const info = rejoinTokens.get(token)
     if (!info) return  // silently ignore expired / stale tokens
