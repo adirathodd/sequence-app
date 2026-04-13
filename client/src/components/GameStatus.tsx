@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { rematch, startVsAI, quitGame } from '../socket/socketClient'
+import { returnToLobby, quitGame } from '../socket/socketClient'
 import Confetti from './Confetti'
 
 const BTN_INDIGO = 'bg-gradient-to-b from-indigo-500 to-indigo-600 hover:from-indigo-400 hover:to-indigo-500 active:from-indigo-600 active:to-indigo-700 text-white font-semibold shadow-md shadow-indigo-950/60 hover:shadow-lg hover:shadow-indigo-900/60 border border-indigo-400/20 rounded-xl transition-all duration-200 active:scale-[0.97]'
@@ -40,8 +40,6 @@ export default function GameStatus() {
     gameState.players.map(p => p.color).filter((c): c is Exclude<typeof c, null> => c !== null)
   )]
 
-  const myName = gameState.players.find(p => p.id === myPlayerId)?.name ?? 'Player'
-
   if (gameState.phase === 'ended') {
     if (!gameState.winner) {
       return (
@@ -53,13 +51,12 @@ export default function GameStatus() {
               <div className="text-sm text-gray-500">{gameState.lastAction}</div>
             </div>
             <div className="flex flex-col gap-2 w-full">
-              {isHost && (
-                <button onClick={() => rematch()} className={`${BTN_INDIGO} w-full py-3 text-sm`}>
-                  Rematch
-                </button>
-              )}
-              <button onClick={() => startVsAI(myName)} className={`${BTN_SECONDARY} w-full py-2.5 text-sm`}>
-                Restart
+              <button
+                onClick={() => { if (isHost) returnToLobby() }}
+                disabled={!isHost}
+                className={`${BTN_INDIGO} w-full py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                {isHost ? 'Return to Lobby' : 'Waiting for host…'}
               </button>
               <button onClick={() => { quitGame(); resetGame() }} className={`${BTN_SECONDARY} w-full py-2.5 text-sm`}>
                 Back to Menu
@@ -118,24 +115,14 @@ export default function GameStatus() {
           </div>
 
           <div className="flex flex-col gap-2 w-full">
-            {isHost && (
-              <button
-                onClick={() => rematch()}
-                className={`${iWon ? BTN_GOLD : BTN_INDIGO} w-full py-3 text-sm`}
-              >
-                Rematch
-              </button>
-            )}
             <button
-              onClick={() => startVsAI(myName)}
+              onClick={() => { if (isHost) returnToLobby() }}
+              disabled={!isHost}
               className={[
-                'w-full py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 active:scale-[0.97]',
-                iWon
-                  ? 'bg-white border-yellow-200 text-yellow-800 hover:bg-yellow-50 shadow-sm'
-                  : 'bg-white/6 border-white/10 hover:bg-white/10 hover:border-white/20 text-gray-300 shadow-sm',
+                `${iWon ? BTN_GOLD : BTN_INDIGO} w-full py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed`,
               ].join(' ')}
             >
-              Restart
+              {isHost ? 'Return to Lobby' : 'Waiting for host…'}
             </button>
             <button
               onClick={() => { quitGame(); resetGame() }}
