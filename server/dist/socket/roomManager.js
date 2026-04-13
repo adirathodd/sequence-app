@@ -374,7 +374,7 @@ function registerHandlers(socket, io) {
         state.players = buildTurnOrder(state.lobbySlots, state.numTeams, state.playersPerTeam);
         startGame(state, io);
     });
-    socket.on('room:rematch', () => {
+    socket.on('room:returnToLobby', () => {
         const roomCode = socketToRoom.get(socket.id);
         if (!roomCode)
             return;
@@ -389,7 +389,41 @@ function registerHandlers(socket, io) {
                 disconnectTimers.delete(player.id);
             }
         }
-        startGame(state, io);
+        clearTurnTimer(roomCode);
+        // Rebuild lobbySlots from current players, preserving teams and AI flags
+        const newSlots = [];
+        for (let t = 0; t < state.numTeams; t++) {
+            const teamColor = TEAM_COLORS[t];
+            const teamPlayers = state.players.filter(p => p.color === teamColor);
+            for (let s = 0; s < state.playersPerTeam; s++) {
+                const player = teamPlayers[s];
+                if (player) {
+                    newSlots.push({
+                        color: teamColor,
+                        seatIndex: s,
+                        playerId: player.isAI ? null : player.id,
+                        playerName: player.isAI ? null : player.name,
+                        isAI: player.isAI,
+                    });
+                }
+                else {
+                    newSlots.push({ color: teamColor, seatIndex: s, playerId: null, playerName: null, isAI: false });
+                }
+            }
+        }
+        // Reset to lobby state
+        state.lobbySlots = newSlots;
+        state.players = [];
+        state.board = (0, board_1.initBoard)();
+        state.deck = [];
+        state.discards = [];
+        state.currentPlayerIndex = 0;
+        state.sequences = [];
+        state.winner = null;
+        state.lastAction = null;
+        state.turnDeadline = null;
+        state.phase = 'lobby';
+        broadcastLobbyState(state, io);
     });
     socket.on('room:rejoin', ({ token }) => {
         const info = rejoinTokens.get(token);
