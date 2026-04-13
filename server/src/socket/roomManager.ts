@@ -432,6 +432,7 @@ export function registerHandlers(socket: Socket, io: Server): void {
       const h = disconnectTimers.get(player.id)
       if (h) { clearTimeout(h); disconnectTimers.delete(player.id) }
     }
+    clearTurnTimer(roomCode)
 
     // Rebuild lobbySlots from current players, preserving teams and AI flags
     const newSlots: LobbySlot[] = []
