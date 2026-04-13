@@ -406,21 +406,6 @@ export function registerHandlers(socket: Socket, io: Server): void {
     startGame(state, io)
   })
 
-  socket.on('room:rematch', () => {
-    const roomCode = socketToRoom.get(socket.id)
-    if (!roomCode) return
-    const state = rooms.get(roomCode)
-    if (!state || state.phase !== 'ended' || state.hostId !== socket.id) return
-
-    // Cancel any lingering disconnect grace timers
-    for (const player of state.players) {
-      const h = disconnectTimers.get(player.id)
-      if (h) { clearTimeout(h); disconnectTimers.delete(player.id) }
-    }
-
-    startGame(state, io)
-  })
-
   socket.on('room:returnToLobby', () => {
     const roomCode = socketToRoom.get(socket.id)
     if (!roomCode) return
