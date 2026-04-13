@@ -80,6 +80,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ roomCode, myPlayerId: playerId, myColor: color }),
 
   setLobbyState: (data) => set({
+    gameState: null,
     lobbySlots: data.slots,
     hostId: data.hostId,
     numTeams: data.numTeams,
